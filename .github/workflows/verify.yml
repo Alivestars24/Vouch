@@ -1,0 +1,123 @@
+name: Verify Vouch
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_supabase:
+        description: Run ephemeral local Supabase, restricted-auth and browser integration checks
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  UV_PYTHON: "3.14"
+  UV_NO_PROGRESS: "1"
+
+jobs:
+  checks:
+    name: Contracts, lint, types, tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      VOUCH_AUTH_MODE: fixture
+      NEXT_PUBLIC_AUTH_MODE: fixture
+      VOUCH_MEDIA_MODE: fixture
+    steps:
+      - name: Check out source without persisting credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.1"
+          package-manager-cache: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.20"
+          enable-cache: false
+      - name: Install Python and locked dependencies
+        run: |
+          uv python install 3.14
+          npm ci
+          npm --prefix apps/web ci
+          uv sync --project services/backend --locked
+      - name: Check generated contracts without repairing them, then run local checks
+        run: npm run check
+
+  local-supabase:
+    name: Opt-in local Supabase and browser integration
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_supabase }}
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      VOUCH_MEDIA_MODE: fixture
+    steps:
+      - name: Check out source without persisting credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.18.1"
+          package-manager-cache: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.20"
+          enable-cache: false
+      - name: Install Python and locked dependencies
+        run: |
+          uv python install 3.14
+          npm ci
+          npm --prefix apps/web ci
+          uv sync --project services/backend --locked
+      - name: Require the runner's local Docker daemon
+        run: docker version --format '{{.Server.Version}}'
+      - name: Install Chromium and Linux browser dependencies
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+      - name: Start isolated local Supabase without printing its keys
+        # Supabase start prints local API secrets. Never stream/capture them as a CI artifact.
+        run: npm run supabase:start > /dev/null 2>&1
+      - name: Apply local migrations and provision ephemeral synthetic identities
+        # Provisioning captures status keys privately and refuses non-loopback targets.
+        run: npm run supabase:provision
+      - name: Verify local SQL grants, row policies and guards
+        run: npm run supabase:test
+      - name: Run the fixture backend suite on isolated local PostgreSQL schemas
+        env:
+          # Public local development default, not a hosted or restricted-runtime credential.
+          VOUCH_TEST_POSTGRES_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres
+        run: uv run --project services/backend pytest services/backend/tests -q
+      - name: Verify real local Auth, private Storage and restricted retention credentials
+        run: npm run test:authenticated
+      - name: Run desktop and mobile fixture browser workflow without traces
+        env:
+          VOUCH_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm --prefix apps/web run test:e2e -- --trace=off
+      - name: Run desktop and mobile authenticated browser workflow without traces
+        # The authenticated Playwright configuration disables traces; keep an explicit CLI override.
+        working-directory: apps/web
+        env:
+          VOUCH_E2E_AUTH: supabase
+        run: npm run test:e2e -- --trace=off
+      - name: Stop only this ephemeral local Supabase project
+        if: ${{ always() }}
+        # Stop output can contain connection details. No credentials/reports/traces are uploaded.
+        run: npm run supabase:stop > /dev/null 2>&1

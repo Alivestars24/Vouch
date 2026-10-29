@@ -1,0 +1,17 @@
+.storage-usage { min-width: 0; }
+.storage-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.storage-heading h2 { margin: 0; font-size: 1.15rem; }
+.storage-heading > span { color: var(--color-brand); }
+.storage-total { margin-block: 1rem .5rem; }
+.storage-total strong { font-family: var(--font-display); font-size: 1.7rem; letter-spacing: -.04em; }
+.storage-total > span { color: var(--color-muted); font-size: .875rem; }
+.storage-usage meter { display: block; width: 100%; height: 12px; accent-color: var(--color-blue-strong); }
+.storage-usage meter::-webkit-meter-bar { border: 1px solid var(--color-rule); border-radius: var(--radius-pill); background: var(--color-paper-2); }
+.storage-usage meter::-webkit-meter-optimum-value { border-radius: var(--radius-pill); background: var(--color-blue-strong); }
+.storage-usage dl { margin-block: 1rem; font-size: .875rem; }
+.storage-usage dl > div { display: flex; justify-content: space-between; gap: .75rem; margin-block: .5rem; }
+.storage-usage dt { color: var(--color-muted); }
+.storage-usage dd { margin: 0; font-family: var(--font-outlier); }
+.storage-usage p, .storage-usage summary { overflow-wrap: anywhere; font-size: .875rem; line-height: 1.5; }
+.storage-usage summary { min-height: 44px; padding-block: .75rem; color: var(--color-blue-strong); cursor: pointer; }
+.storage-usage > button { margin-top: 1rem; }

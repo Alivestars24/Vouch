@@ -1,0 +1,48 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+.local/
+
+# JavaScript
+node_modules/
+.next/
+.vitest/
+coverage/
+playwright-report/
+test-results/
+.playwright-mcp/
+*.tsbuildinfo
+supabase/.temp/
+supabase/.branches/
+
+# Local agent planning, memory and generated review artifacts
+.artifacts/
+.hallmark/
+.planning/
+.remember/
+AGENTS.md
+**/AGENTS.md
+docs/source/
+docs/engineering/documentation-review.md
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local fixture runtime data
+.data/
+services/backend/.data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Tool and editor artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
