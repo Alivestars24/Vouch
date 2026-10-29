@@ -98,6 +98,34 @@ export interface CampaignTrack {
   events: TrackEvent[];
 }
 
+export interface CampaignReadinessCitation {
+  sourceType: "campaign" | "submission" | "submission_version" | "analysis" | "review_context" | "deletion_request";
+  sourceId: string;
+  label: string;
+  href: string;
+}
+
+export interface CampaignReadinessItem {
+  id: string;
+  severity: "blocker" | "action" | "ready";
+  category: "upload" | "check" | "evidence" | "review" | "cleanup";
+  title: string;
+  detail: string;
+  actionLabel: string;
+  citation: CampaignReadinessCitation;
+}
+
+export interface CampaignReadiness {
+  campaignId: string;
+  generationMode: "deterministic_records";
+  ready: boolean;
+  blockerCount: number;
+  actionCount: number;
+  summary: string;
+  items: CampaignReadinessItem[];
+  limitations: string[];
+}
+
 export interface CatalogProduct {
   id: string;
   name: string;

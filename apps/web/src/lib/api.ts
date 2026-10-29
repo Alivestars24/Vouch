@@ -5,6 +5,7 @@ import type {
   ApprovalRecord,
   ApprovalReport,
   Campaign,
+  CampaignReadiness,
   CampaignTrack,
   CatalogCreator,
   CatalogProduct,
@@ -766,6 +767,45 @@ export async function getCampaigns(identity: FixtureIdentity, signal?: AbortSign
 
 export async function getCampaign(identity: FixtureIdentity, campaignId: string, signal?: AbortSignal): Promise<Campaign> {
   return normalizeCampaign(await requestJson(identity, `/campaigns/${campaignId}`, { signal }));
+}
+
+export async function getCampaignReadiness(
+  identity: FixtureIdentity,
+  campaignId: string,
+  signal?: AbortSignal,
+): Promise<CampaignReadiness> {
+  const source = record(await requestJson(
+    identity,
+    `/campaigns/${encodeURIComponent(campaignId)}/readiness`,
+    { signal },
+  ));
+  return {
+    campaignId: stringAt(source, ["campaign_id"]),
+    generationMode: stringAt(source, ["generation_mode"]) as CampaignReadiness["generationMode"],
+    ready: booleanAt(source, ["ready"]),
+    blockerCount: numberAt(source, ["blocker_count"]),
+    actionCount: numberAt(source, ["action_count"]),
+    summary: stringAt(source, ["summary"]),
+    items: arrayAt(source, "items").map((item) => {
+      const row = record(item);
+      const citation = record(valueAt(row, "citation"));
+      return {
+        id: stringAt(row, ["id"]),
+        severity: stringAt(row, ["severity"]) as CampaignReadiness["items"][number]["severity"],
+        category: stringAt(row, ["category"]) as CampaignReadiness["items"][number]["category"],
+        title: stringAt(row, ["title"]),
+        detail: stringAt(row, ["detail"]),
+        actionLabel: stringAt(row, ["action_label"]),
+        citation: {
+          sourceType: stringAt(citation, ["source_type"]) as CampaignReadiness["items"][number]["citation"]["sourceType"],
+          sourceId: stringAt(citation, ["source_id"]),
+          label: stringAt(citation, ["label"]),
+          href: stringAt(citation, ["href"]),
+        },
+      };
+    }),
+    limitations: arrayAt(source, "limitations").map(String),
+  };
 }
 
 function normalizeTrackSummary(input: unknown): TrackEnvironmentSummary {

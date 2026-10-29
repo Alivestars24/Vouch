@@ -56,6 +56,7 @@ from .schemas import (
     CampaignCreate,
     CampaignCreatorCreate,
     CampaignCreatorRead,
+    CampaignReadinessRead,
     CampaignTrackRead,
     CheckCreate,
     ConsentReceiptRead,
@@ -94,6 +95,7 @@ from .service import (
     add_campaign_creator,
     approval_report,
     campaign_dict,
+    campaign_readiness,
     campaign_track_report,
     capabilities,
     catalog_creators,
@@ -343,6 +345,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         campaign_id: UUID, session: SessionDep, principal: PrincipalDep
     ) -> dict[str, Any]:
         return campaign_dict(session, get_campaign(session, principal, campaign_id))
+
+    @app.get(
+        "/api/v1/campaigns/{campaign_id}/readiness",
+        response_model=CampaignReadinessRead,
+    )
+    def campaign_readiness_get(
+        campaign_id: UUID,
+        response: Response,
+        session: SessionDep,
+        principal: PrincipalDep,
+    ) -> CampaignReadinessRead:
+        response.headers["Cache-Control"] = "no-store"
+        return CampaignReadinessRead.model_validate(
+            campaign_readiness(session, principal, campaign_id)
+        )
 
     @app.get(
         "/api/v1/campaigns/{campaign_id}/track",

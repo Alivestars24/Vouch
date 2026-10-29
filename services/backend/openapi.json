@@ -457,6 +457,65 @@
         "title": "CampaignCreatorRead",
         "type": "object"
       },
+      "CampaignReadinessRead": {
+        "additionalProperties": false,
+        "properties": {
+          "action_count": {
+            "minimum": 0.0,
+            "title": "Action Count",
+            "type": "integer"
+          },
+          "blocker_count": {
+            "minimum": 0.0,
+            "title": "Blocker Count",
+            "type": "integer"
+          },
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "generation_mode": {
+            "const": "deterministic_records",
+            "title": "Generation Mode",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReadinessItemRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "campaign_id",
+          "generation_mode",
+          "ready",
+          "blocker_count",
+          "action_count",
+          "summary",
+          "items",
+          "limitations"
+        ],
+        "title": "CampaignReadinessRead",
+        "type": "object"
+      },
       "CampaignTrackRead": {
         "additionalProperties": false,
         "properties": {
@@ -1916,6 +1975,99 @@
         "title": "ProcessingNotice",
         "type": "object"
       },
+      "ReadinessCitationRead": {
+        "additionalProperties": false,
+        "properties": {
+          "href": {
+            "title": "Href",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "source_id": {
+            "format": "uuid",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_type": {
+            "enum": [
+              "campaign",
+              "submission",
+              "submission_version",
+              "analysis",
+              "review_context",
+              "deletion_request"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_type",
+          "source_id",
+          "label",
+          "href"
+        ],
+        "title": "ReadinessCitationRead",
+        "type": "object"
+      },
+      "ReadinessItemRead": {
+        "additionalProperties": false,
+        "properties": {
+          "action_label": {
+            "title": "Action Label",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "upload",
+              "check",
+              "evidence",
+              "review",
+              "cleanup"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "citation": {
+            "$ref": "#/components/schemas/ReadinessCitationRead"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "blocker",
+              "action",
+              "ready"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "severity",
+          "category",
+          "title",
+          "detail",
+          "action_label",
+          "citation"
+        ],
+        "title": "ReadinessItemRead",
+        "type": "object"
+      },
       "ReviewDecisionCreate": {
         "additionalProperties": false,
         "properties": {
@@ -2878,6 +3030,99 @@
           }
         ],
         "summary": "Guest Invitation Create"
+      }
+    },
+    "/api/v1/campaigns/{campaign_id}/readiness": {
+      "get": {
+        "operationId": "campaign_readiness_get_api_v1_campaigns__campaign_id__readiness_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Organization-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fixture-User",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fixture-User"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fixture-Roles",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fixture-Roles"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignReadinessRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "SupabaseBearer": []
+          }
+        ],
+        "summary": "Campaign Readiness Get"
       }
     },
     "/api/v1/campaigns/{campaign_id}/submissions": {

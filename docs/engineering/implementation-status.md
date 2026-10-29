@@ -808,6 +808,26 @@ reconciliation. No customer content or paid product call was sent to Meta.
 | Responsive public surfaces | 390x844 mobile, reduced-motion login and expired creator-link state rendered with expected controls; no unexpected application console error |
 | Web deployment boundary | Validated opt-in `VOUCH_INTERNAL_API_ORIGIN` same-origin proxy plus global no-sniff/frame/referrer/opener/permissions headers; lint/build passed and localhost returned the headers |
 
+## Campaign readiness brief and current Meta transport check: 2026-10-30
+
+The campaign workspace now derives a no-store, tenant-scoped readiness brief from current uploads,
+Checks, evidence coverage, finding decisions, exact-version approvals and pending cleanup. Every
+blocker/action links to its source region. The core brief is deterministic and does not depend on
+Wonder, mutate review state or claim legal compliance.
+
+The account catalog probe succeeded for Spark 1.3, Voice Transcribe, SAM 3.1 and Wonder. Muse Image
+remained policy-restricted for the India operator. One explicitly authorized bounded Spark 1.3
+synthetic call succeeded with strict structured output and `store:false`; it used 26 input and 48
+output tokens, including 34 reasoning tokens. This verifies current key/transport access only, not
+future billing availability or product-video Check quality.
+
+| Verification | Result |
+| --- | --- |
+| Readiness lifecycle backend test | Passed across empty, unchecked, finding-blocked, approved, revised and revoked states plus cross-tenant denial |
+| Readiness frontend test | Passed for cited navigation, refresh and fail-closed load error |
+| Focused Ruff, mypy, ESLint and TypeScript | Passed |
+| `npm run contracts:check` | Passed after OpenAPI/type regeneration |
+
 ## Known limitations and dependencies
 
 - SQLite fixture and local Supabase Auth/Storage both execute the workflow. Hosted schema/runtime
@@ -848,9 +868,9 @@ reconciliation. No customer content or paid product call was sent to Meta.
   Replacement `neoapucrxhtwlaqzyikn` now has 39 migrations, private Storage and four separately
   restricted runtime logins. No fixture seed/Auth user was pushed. Auth mapping remains empty until
   real OAuth plus explicit operator onboarding. Never push the local known-password seed.
-- This workspace is not initialized as a Git repository; no commit or remote publication was made.
-  [CI configuration](ci.md) now exists and is locally validated; no remote workflow run or Linux
-  integration success is claimed. Repository/remote publication and deployment remain separate decisions.
+- The Git repository is connected to the private `Alivestars24/Vouch` remote. The initial remote
+  verification workflow passed; each later change still requires its own run. Public deployment
+  remains a separate gated decision.
 
 Hackathon eligibility is tracked separately in [Meta readiness](../integrations/meta-api-readiness.md).
 This pre-event work is not claimed as submission-eligible without confirmed rules.

@@ -119,6 +119,41 @@ class CampaignTrackRead(ApiModel):
     events: list[OutcomeEventRead]
 
 
+ReadinessSeverity = Literal["blocker", "action", "ready"]
+ReadinessCategory = Literal["upload", "check", "evidence", "review", "cleanup"]
+ReadinessSourceType = Literal[
+    "campaign", "submission", "submission_version", "analysis", "review_context", "deletion_request"
+]
+
+
+class ReadinessCitationRead(ApiModel):
+    source_type: ReadinessSourceType
+    source_id: UUID
+    label: str
+    href: str
+
+
+class ReadinessItemRead(ApiModel):
+    id: str
+    severity: ReadinessSeverity
+    category: ReadinessCategory
+    title: str
+    detail: str
+    action_label: str
+    citation: ReadinessCitationRead
+
+
+class CampaignReadinessRead(ApiModel):
+    campaign_id: UUID
+    generation_mode: Literal["deterministic_records"]
+    ready: bool
+    blocker_count: int = Field(ge=0)
+    action_count: int = Field(ge=0)
+    summary: str
+    items: list[ReadinessItemRead]
+    limitations: list[str]
+
+
 CreatorMatchKind = Literal["exact_product", "category_relevance"]
 CreatorPermissionStatus = Literal[
     "permission_recorded", "license_recorded", "permission_unknown"

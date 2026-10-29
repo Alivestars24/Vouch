@@ -148,8 +148,26 @@ def test_complete_revision_and_exact_version_approval(
     beta_headers: dict[str, str],
 ) -> None:
     campaign = create_campaign(client, marketer_headers)
+    empty_readiness = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
+    )
+    assert empty_readiness.status_code == 200
+    assert empty_readiness.headers["cache-control"] == "no-store"
+    assert empty_readiness.json()["ready"] is False
+    assert empty_readiness.json()["items"][0]["id"] == "campaign:no-draft"
+    foreign_readiness = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=beta_headers
+    )
+    assert foreign_readiness.status_code == 404
+
     submission = create_submission(client, marketer_headers, campaign)
     version_one = submission["versions"][0]
+    unchecked_readiness = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
+    ).json()
+    assert unchecked_readiness["action_count"] == 1
+    assert unchecked_readiness["items"][0]["category"] == "check"
+
     accepted = start_check(client, marketer_headers, version_one["id"], "success", "check-v1")
     assert accepted.status_code == 202
     assert process_next_job(client.app.state.database)
@@ -162,6 +180,11 @@ def test_complete_revision_and_exact_version_approval(
     assert check["machine_assessment"] == "fixes_suggested"
     assert check["review_status"] == "unreviewed"
     assert check["findings"][0]["time_range"] == {"start_ms": 0, "end_ms": 4000}
+    blocked_readiness = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
+    ).json()
+    assert blocked_readiness["blocker_count"] == 1
+    assert blocked_readiness["items"][0]["category"] == "review"
     unavailable_report = client.get(
         f"/api/v1/checks/{check_id}/approval-report", headers=reviewer_headers
     )
@@ -204,6 +227,11 @@ def test_complete_revision_and_exact_version_approval(
     )
     assert approval.status_code == 200
     assert approval.json()["review_status"] == "approved"
+    approved_readiness = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
+    ).json()
+    assert approved_readiness["ready"] is True
+    assert approved_readiness["items"][0]["severity"] == "ready"
     report_response = client.get(
         f"/api/v1/checks/{check_id}/approval-report", headers=reviewer_headers
     )
@@ -238,6 +266,11 @@ def test_complete_revision_and_exact_version_approval(
     assert revision.status_code == 201
     version_two = revision.json()["versions"][-1]
     assert version_two["version_no"] == 2
+    revised_readiness = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
+    ).json()
+    assert revised_readiness["ready"] is False
+    assert revised_readiness["items"][0]["category"] == "check"
     historical = client.get(f"/api/v1/checks/{check_id}", headers=reviewer_headers).json()
     assert historical["review_status"] == "superseded"
     superseded_report = client.get(
@@ -264,6 +297,9 @@ def test_complete_revision_and_exact_version_approval(
     )
     assert approved_two.status_code == 200
     assert approved_two.json()["submission_version_id"] == version_two["id"]
+    assert client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
+    ).json()["ready"] is True
     current_report = client.get(
         f"/api/v1/checks/{clean_check['id']}/approval-report", headers=reviewer_headers
     )
@@ -283,6 +319,11 @@ def test_complete_revision_and_exact_version_approval(
     )
     assert revoked.status_code == 200
     assert revoked.json()["review_status"] == "revoked"
+    revoked_readiness = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
+    ).json()
+    assert revoked_readiness["ready"] is False
+    assert revoked_readiness["items"][0]["severity"] == "action"
     revoked_report = client.get(
         f"/api/v1/checks/{clean_check['id']}/approval-report", headers=reviewer_headers
     )

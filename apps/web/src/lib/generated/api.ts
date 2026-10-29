@@ -90,6 +90,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/campaigns/{campaign_id}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Campaign Readiness Get */
+        get: operations["campaign_readiness_get_api_v1_campaigns__campaign_id__readiness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/campaigns/{campaign_id}/submissions": {
         parameters: {
             query?: never;
@@ -1031,6 +1048,31 @@ export interface components {
              */
             id: string;
         };
+        /** CampaignReadinessRead */
+        CampaignReadinessRead: {
+            /** Action Count */
+            action_count: number;
+            /** Blocker Count */
+            blocker_count: number;
+            /**
+             * Campaign Id
+             * Format: uuid
+             */
+            campaign_id: string;
+            /**
+             * Generation Mode
+             * @constant
+             */
+            generation_mode: "deterministic_records";
+            /** Items */
+            items: components["schemas"]["ReadinessItemRead"][];
+            /** Limitations */
+            limitations: string[];
+            /** Ready */
+            ready: boolean;
+            /** Summary */
+            summary: string;
+        };
         /** CampaignTrackRead */
         CampaignTrackRead: {
             /**
@@ -1671,6 +1713,45 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** ReadinessCitationRead */
+        ReadinessCitationRead: {
+            /** Href */
+            href: string;
+            /** Label */
+            label: string;
+            /**
+             * Source Id
+             * Format: uuid
+             */
+            source_id: string;
+            /**
+             * Source Type
+             * @enum {string}
+             */
+            source_type: "campaign" | "submission" | "submission_version" | "analysis" | "review_context" | "deletion_request";
+        };
+        /** ReadinessItemRead */
+        ReadinessItemRead: {
+            /** Action Label */
+            action_label: string;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "upload" | "check" | "evidence" | "review" | "cleanup";
+            citation: components["schemas"]["ReadinessCitationRead"];
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "blocker" | "action" | "ready";
+            /** Title */
+            title: string;
+        };
         /** ReviewDecisionCreate */
         ReviewDecisionCreate: {
             /**
@@ -2052,6 +2133,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GuestInvitationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    campaign_readiness_get_api_v1_campaigns__campaign_id__readiness_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+                "X-Fixture-User"?: string | null;
+                "X-Fixture-Roles"?: string | null;
+            };
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignReadinessRead"];
                 };
             };
             /** @description Validation Error */

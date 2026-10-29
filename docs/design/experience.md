@@ -143,6 +143,11 @@ After submission, show the asset version, upload receipt, job status and stages 
 
 At the top, show the campaign, creator, content version, caption version, execution provenance, run time, pinned pack and evidence coverage. Place **AI assessment** and **Human review** in separate labeled regions. Example: “AI assessment: Fixes suggested” alongside “Human review: Not reviewed.” A no-issues AI result must not make the whole page look approved.
 
+Before the workflow controls, show a compact **What needs attention now** brief derived from current
+campaign records. Separate blocking issues from next actions, link each item to the exact review
+region and state that the summary is record-derived. Loading or failure must not render a false
+ready state. Wonder may later add a bounded cited dossier, but is not required for this core brief.
+
 Proposed desktop layout: video/player and transcript on one side; findings/rule detail on the other; a narrow timeline beneath the player. On mobile, stack player, summaries, finding list and detail with clear return/focus behavior. Keep destructive or approval actions out of accidental playback tap areas.
 
 Each finding shows:

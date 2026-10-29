@@ -9,6 +9,7 @@ import { DeletionHistory } from "@/components/deletion-history";
 import { MediaAssetMetadata } from "@/components/media-processing";
 import { ProcessingAuthorization } from "@/components/processing-authorization";
 import { CreatorInvitation } from "@/components/creator-invitation";
+import { CampaignReadinessPanel } from "@/components/campaign-readiness";
 import { InlineNotice, StatePanel, StatusBadge, StatusTriptych } from "@/components/status";
 import { useIdentity } from "@/components/identity-context";
 import {
@@ -449,6 +450,12 @@ export function CampaignWorkspace({ campaignId }: { campaignId: string }) {
 
       {error ? <InlineNotice tone="danger" title="Action did not complete"><p>{error}</p></InlineNotice> : null}
 
+      <CampaignReadinessPanel
+        campaignId={campaign.id}
+        identity={identity}
+        refreshKey={`${submissions.map((item) => `${item.id}:${item.currentVersionId}`).join("|")}:${check?.id ?? ""}:${check?.reviewVersion ?? ""}:${deletion?.status ?? ""}`}
+      />
+
       <section className="workflow-strip" aria-label="Review workflow">
         {[
           ["1", "Upload", Boolean(version)],
@@ -463,21 +470,23 @@ export function CampaignWorkspace({ campaignId }: { campaignId: string }) {
 
       <div className="review-grid">
         <div className="primary-column page-stack">
-          <SubmissionUploader
-            campaignId={campaign.id}
-            submission={selectedSubmission}
-            creatorId={creatorId}
-            creatorName={creatorName}
-            canUpload={canUpload && Boolean(creatorId)}
-            mediaProcessing={mediaProcessing}
-            mediaProcessingLoading={mediaProcessingLoading}
-            onUploaded={() => {
-              setCheck(undefined);
-              setActiveCheckId(undefined);
-              setComparison(undefined);
-              void load();
-            }}
-          />
+          <div id="submission-upload">
+            <SubmissionUploader
+              campaignId={campaign.id}
+              submission={selectedSubmission}
+              creatorId={creatorId}
+              creatorName={creatorName}
+              canUpload={canUpload && Boolean(creatorId)}
+              mediaProcessing={mediaProcessing}
+              mediaProcessingLoading={mediaProcessingLoading}
+              onUploaded={() => {
+                setCheck(undefined);
+                setActiveCheckId(undefined);
+                setComparison(undefined);
+                void load();
+              }}
+            />
+          </div>
 
           {version ? (
             <section className="check-launch" aria-labelledby="check-launch-heading">
@@ -596,7 +605,7 @@ export function CampaignWorkspace({ campaignId }: { campaignId: string }) {
             creatorName={creatorName}
             canInvite={canUpload && Boolean(creatorId)}
           />
-          <section className="context-card">
+          <section className="context-card" id="privacy-controls">
             <p className="eyebrow">Version history</p>
             <h2>Immutable snapshots</h2>
             {submissions.length === 0 ? <p>No submission yet.</p> : submissions.map((submission) => (

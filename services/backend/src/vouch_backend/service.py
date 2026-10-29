@@ -692,6 +692,292 @@ def campaign_dict(session: Session, campaign: Campaign) -> dict[str, Any]:
     }
 
 
+def campaign_readiness(
+    session: Session,
+    principal: Principal,
+    campaign_id: UUID,
+) -> dict[str, Any]:
+    campaign = get_campaign(session, principal, campaign_id)
+    base_href = f"/campaigns/{campaign.id}"
+    submissions = session.scalars(
+        select(Submission)
+        .where(
+            Submission.organization_id == principal.organization_id,
+            Submission.campaign_id == campaign.id,
+            Submission.deleted_at.is_(None),
+        )
+        .order_by(Submission.created_at)
+    ).all()
+    items: list[dict[str, Any]] = []
+
+    def add_item(
+        *,
+        item_id: str,
+        severity: str,
+        category: str,
+        title: str,
+        detail: str,
+        action_label: str,
+        source_type: str,
+        source_id: UUID,
+        label: str,
+        anchor: str,
+    ) -> None:
+        items.append(
+            {
+                "id": item_id,
+                "severity": severity,
+                "category": category,
+                "title": title,
+                "detail": detail,
+                "action_label": action_label,
+                "citation": {
+                    "source_type": source_type,
+                    "source_id": source_id,
+                    "label": label,
+                    "href": f"{base_href}#{anchor}",
+                },
+            }
+        )
+
+    if not submissions:
+        add_item(
+            item_id="campaign:no-draft",
+            severity="blocker",
+            category="upload",
+            title="No creator draft is ready for review",
+            detail="Upload an authorized draft before Check can produce evidence.",
+            action_label="Open upload",
+            source_type="campaign",
+            source_id=campaign.id,
+            label=campaign.name,
+            anchor="submission-upload",
+        )
+
+    for submission in submissions:
+        version = session.get(SubmissionVersion, submission.current_version_id)
+        if version is None:
+            add_item(
+                item_id=f"submission:{submission.id}:no-version",
+                severity="blocker",
+                category="upload",
+                title="A creator submission has no current version",
+                detail="Complete the authorized upload before starting Check.",
+                action_label="Open submission",
+                source_type="submission",
+                source_id=submission.id,
+                label="Submission awaiting a version",
+                anchor="submission-upload",
+            )
+            continue
+        analysis = session.scalar(
+            select(Analysis)
+            .where(
+                Analysis.organization_id == principal.organization_id,
+                Analysis.submission_version_id == version.id,
+            )
+            .order_by(Analysis.created_at.desc())
+            .limit(1)
+        )
+        if analysis is None:
+            add_item(
+                item_id=f"version:{version.id}:unchecked",
+                severity="action",
+                category="check",
+                title=f"Version {version.version_no} has not been checked",
+                detail="Run Check for this exact media and caption version.",
+                action_label="Run Check",
+                source_type="submission_version",
+                source_id=version.id,
+                label=f"Submission version {version.version_no}",
+                anchor="check-launch-heading",
+            )
+            continue
+        if analysis.analysis_status != "completed":
+            add_item(
+                item_id=f"analysis:{analysis.id}:status",
+                severity="blocker",
+                category="check",
+                title=f"Check is {analysis.analysis_status.replace('_', ' ')}",
+                detail="Approval requires a completed Check for all required evidence.",
+                action_label="Inspect Check",
+                source_type="analysis",
+                source_id=analysis.id,
+                label=f"Check {analysis.id}",
+                anchor="evidence-heading",
+            )
+        missing = sorted(set(analysis.required_coverage) - set(analysis.observed_coverage))
+        if missing:
+            add_item(
+                item_id=f"analysis:{analysis.id}:coverage",
+                severity="blocker",
+                category="evidence",
+                title="Required evidence is incomplete",
+                detail=f"Missing coverage: {', '.join(missing)}.",
+                action_label="Review evidence gaps",
+                source_type="analysis",
+                source_id=analysis.id,
+                label=f"Check evidence {analysis.id}",
+                anchor="evidence-heading",
+            )
+        findings = session.scalars(
+            select(Finding).where(
+                Finding.organization_id == principal.organization_id,
+                Finding.analysis_id == analysis.id,
+            )
+        ).all()
+        unresolved = 0
+        blocking = 0
+        for finding in findings:
+            decision = latest_decision(session, finding.id)
+            if decision is None:
+                unresolved += 1
+            elif decision.decision not in {"dismissed", "incorrect"}:
+                blocking += 1
+        if unresolved or blocking:
+            parts = []
+            if unresolved:
+                parts.append(f"{unresolved} awaiting a reviewer decision")
+            if blocking:
+                parts.append(f"{blocking} still requiring a content fix")
+            add_item(
+                item_id=f"analysis:{analysis.id}:findings",
+                severity="blocker",
+                category="review",
+                title="Finding decisions still block approval",
+                detail="; ".join(parts) + ".",
+                action_label="Review findings",
+                source_type="analysis",
+                source_id=analysis.id,
+                label=f"Check findings {analysis.id}",
+                anchor="findings-heading",
+            )
+        context = session.scalar(
+            select(ReviewContext).where(
+                ReviewContext.organization_id == principal.organization_id,
+                ReviewContext.analysis_id == analysis.id,
+            )
+        )
+        if context is None:
+            add_item(
+                item_id=f"analysis:{analysis.id}:review-missing",
+                severity="blocker",
+                category="review",
+                title="Review context is unavailable",
+                detail="The Check cannot receive a human decision until its review context exists.",
+                action_label="Inspect Check",
+                source_type="analysis",
+                source_id=analysis.id,
+                label=f"Check {analysis.id}",
+                anchor="approval-heading",
+            )
+        elif context.review_status == "approved":
+            add_item(
+                item_id=f"review:{context.id}:approved",
+                severity="ready",
+                category="review",
+                title=f"Version {version.version_no} has current human approval",
+                detail="The approval is bound to this version's immutable manifest.",
+                action_label="View approval",
+                source_type="review_context",
+                source_id=context.id,
+                label=f"Approved review revision {context.revision}",
+                anchor="approval-heading",
+            )
+        elif (
+            not unresolved
+            and not blocking
+            and analysis.analysis_status == "completed"
+            and not missing
+        ):
+            status_copy = {
+                "unreviewed": "The completed Check is waiting for a human decision.",
+                "changes_requested": "A reviewer requested a revised creator draft.",
+                "rejected": "The current version was rejected and needs a new version.",
+                "revoked": (
+                    "The prior approval was revoked; this version is not currently approved."
+                ),
+                "superseded": "A newer version requires its own Check and review.",
+            }.get(context.review_status, "The current review needs attention.")
+            add_item(
+                item_id=f"review:{context.id}:{context.review_status}",
+                severity="action",
+                category="review",
+                title=f"Human review is {context.review_status.replace('_', ' ')}",
+                detail=status_copy,
+                action_label="Open human review",
+                source_type="review_context",
+                source_id=context.id,
+                label=f"Review revision {context.revision}",
+                anchor="approval-heading",
+            )
+
+    asset_ids = select(MediaAsset.id).where(
+        MediaAsset.organization_id == principal.organization_id,
+        MediaAsset.campaign_id == campaign.id,
+    )
+    submission_ids = select(Submission.id).where(
+        Submission.organization_id == principal.organization_id,
+        Submission.campaign_id == campaign.id,
+    )
+    pending_cleanup = session.scalars(
+        select(DeletionRequest).where(
+            DeletionRequest.organization_id == principal.organization_id,
+            DeletionRequest.status != "completed",
+            or_(
+                (DeletionRequest.resource_type == "media_asset")
+                & DeletionRequest.resource_id.in_(asset_ids),
+                (DeletionRequest.resource_type == "submission")
+                & DeletionRequest.resource_id.in_(submission_ids),
+            ),
+        )
+    ).all()
+    for deletion in pending_cleanup:
+        add_item(
+            item_id=f"deletion:{deletion.id}",
+            severity="action",
+            category="cleanup",
+            title="Data cleanup still needs attention",
+            detail=(
+                f"Deletion is {deletion.status.replace('_', ' ')} after "
+                f"{deletion.attempt_count} attempt(s)."
+            ),
+            action_label="Review cleanup",
+            source_type="deletion_request",
+            source_id=deletion.id,
+            label=f"Deletion request {deletion.id}",
+            anchor="privacy-controls",
+        )
+
+    severity_rank = {"blocker": 0, "action": 1, "ready": 2}
+    items.sort(key=lambda item: (severity_rank[item["severity"]], item["id"]))
+    blocker_count = sum(item["severity"] == "blocker" for item in items)
+    action_count = sum(item["severity"] == "action" for item in items)
+    ready = bool(submissions) and blocker_count == 0 and action_count == 0
+    if ready:
+        summary = "Every current creator version has a completed Check and current human approval."
+    elif blocker_count:
+        summary = (
+            f"{blocker_count} blocking issue(s) must be resolved before this campaign is ready."
+        )
+    else:
+        summary = f"{action_count} next action(s) remain before this campaign is ready."
+    return {
+        "campaign_id": campaign.id,
+        "generation_mode": "deterministic_records",
+        "ready": ready,
+        "blocker_count": blocker_count,
+        "action_count": action_count,
+        "summary": summary,
+        "items": items,
+        "limitations": [
+            "This brief is derived from authorized Vouch records and does not invoke Wonder.",
+            "It cannot certify legal compliance, approve content, publish content, or "
+            "contact creators.",
+        ],
+    }
+
+
 def create_campaign(
     session: Session, principal: Principal, payload: CampaignCreate
 ) -> dict[str, Any]:
