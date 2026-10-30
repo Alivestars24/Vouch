@@ -163,3 +163,5 @@ The [demo folder](demo/) is reserved for the recorded walkthrough. A video link 
 Next.js, React and TypeScript power the interface. FastAPI, Python and SQLAlchemy implement the API and workers. Supabase provides PostgreSQL, authentication and private storage. Draw.io diagrams document the system and its workflows.
 
 The API readiness endpoint is available at https://vouch-api-zow8.onrender.com/ready. The hosted frontend and judge account are still being verified.
+
+The architecture diagrams are editable Draw.io SVG files and can be opened directly in the Draw.io editor.
