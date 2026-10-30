@@ -152,7 +152,7 @@ The default check covers API contract drift, lint, type checks, unit tests and t
 
 ![Intended deployment topology](docs/diagrams/11-deployment-topology.drawio.svg)
 
-The intended deployment is Vercel for the frontend, Render for the API, and hosted Supabase for authentication, PostgreSQL and private Storage. Deployments need the correct public frontend origin, OAuth callback allowlist, restricted per-process credentials and a reliable strategy for Check and retention work. Render's free web services can sleep and restart, so a free demonstration should not be represented as an always-on production service.
+The frontend is available at [vouch-psi-nine.vercel.app](https://vouch-psi-nine.vercel.app), with the API on Render and hosted Supabase for authentication, PostgreSQL and private Storage. The public sign-in screen and API readiness have been checked; authenticated onboarding, the judge demo workspace and hosted Check and retention workers are not yet verified. Render's free web services can sleep and restart, so this deployment should not be represented as an always-on production service.
 
 ![Walkthrough structure](docs/diagrams/12-demo-walkthrough.drawio.svg)
 
@@ -162,6 +162,6 @@ The [demo folder](demo/) is reserved for the recorded walkthrough. A video link 
 
 Next.js, React and TypeScript power the interface. FastAPI, Python and SQLAlchemy implement the API and workers. Supabase provides PostgreSQL, authentication and private storage. Draw.io diagrams document the system and its workflows.
 
-The API readiness endpoint is available at https://vouch-api-zow8.onrender.com/ready. The hosted frontend and judge account are still being verified.
+The API readiness endpoint is available at https://vouch-api-zow8.onrender.com/ready. The hosted judge account is still being prepared.
 
 The architecture diagrams are editable Draw.io SVG files and can be opened directly in the Draw.io editor.
