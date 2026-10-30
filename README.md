@@ -2,6 +2,21 @@
 
 Creator campaigns with evidence, human review and measurable outcomes.
 
+## Architecture diagrams
+
+These Draw.io SVGs contain editable diagram data. Open an image in Draw.io to inspect or edit it.
+
+![Vouch system architecture](docs/diagrams/02-system-architecture.drawio.svg)
+
+| Product and architecture | Workflows and operations |
+| --- | --- |
+| [Product loop](docs/diagrams/01-product-loop.drawio.svg) | [Authentication and onboarding](docs/diagrams/04-auth-onboarding.drawio.svg) |
+| [System architecture](docs/diagrams/02-system-architecture.drawio.svg) | [Creator revision](docs/diagrams/05-creator-revision.drawio.svg) |
+| [Trust boundaries](docs/diagrams/03-trust-boundaries.drawio.svg) | [Check pipeline](docs/diagrams/06-check-pipeline.drawio.svg) |
+| [Data model](docs/diagrams/08-data-model.drawio.svg) | [Approval binding](docs/diagrams/07-approval-binding.drawio.svg) |
+| [Model roles](docs/diagrams/09-model-roles.drawio.svg) | [Retention and deletion](docs/diagrams/10-retention-deletion.drawio.svg) |
+| [Deployment topology](docs/diagrams/11-deployment-topology.drawio.svg) | [Demo walkthrough](docs/diagrams/12-demo-walkthrough.drawio.svg) |
+
 **Current state: runnable fixture Check workflow on SQLite or local Supabase Postgres.** The
 Next.js web, FastAPI API and separate Python worker share one domain implementation. Postgres
 persistence, tenant constraints, approval/deletion guards and desktop/mobile browser flows are
