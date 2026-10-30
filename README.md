@@ -1,16 +1,34 @@
 # Vouch
 
-**A clearer path from creator content to a human decision.**
+Vouch is a creator-campaign workspace for teams that need to move from a brief to an accountable human decision. Find brings curated creator evidence into a campaign; Check organizes an authorized draft, findings and revisions; Track demonstrates campaign outcomes in a separate test ledger. Every approval is tied to the exact version a reviewer saw.
 
-Brands and creators need to agree on what a campaign asks for, what evidence supports its claims, and which exact version is ready to use. Vouch brings that work into one campaign: discover relevant creators, review submitted content, request revisions, and keep decisions attached to the evidence behind them.
+## Try it
+
+Live site: [vouch-psi-nine.vercel.app](https://vouch-psi-nine.vercel.app) · [API readiness](https://vouch-api-zow8.onrender.com/ready)
+
+**Judge access:** a shared hosted demo account has not yet been provisioned. The site currently requires a Supabase account with an explicitly assigned workspace membership; Google sign-in alone does not grant access. The local fixture demo below is available without a password.
+
+**Walkthrough:** a narrated full walkthrough is planned for the [demo folder](demo/); the recording is not available yet. The intended tour follows a synthetic creator and campaign through Find, Check, revision, human review and test-only Track, then explains the architecture and model boundaries.
+
+**Current limits of the public deployment:** the sign-in page and API readiness have been checked, but hosted onboarding and the background workers are not verified. Check uses deterministic fixture providers rather than live video analysis. Track has no real commerce connector, and Try cannot generate an image in India because the intended image model is restricted. Render's free API can take time to wake after inactivity.
+
+### A suggested walkthrough
+
+1. Open Find and inspect the synthetic creator's source, permission and product match.
+2. Open the Orbit Frames demo campaign and read its readiness brief.
+3. Inspect the synthetic upload, Check evidence and the finding that needs a reviewer decision.
+4. Follow a revision through comparison and exact-version approval.
+5. Open Track and inspect the clearly labeled test click, order and refund.
+
+The prepared campaign currently exists only in the local fixture database. It has not yet been copied to a hosted judge workspace.
 
 ![The Vouch campaign loop](docs/diagrams/01-product-loop.drawio.svg)
 
 ## Contents
 
-[Product and workflow](#what-vouch-does) · [Architecture](#architecture) · [Security and identity](#identity-and-trust-boundaries) · [Review pipeline](#inside-the-check-pipeline) · [Data model](#data-and-api) · [Local setup](#run-locally) · [Testing](#verify-changes) · [Deployment](#deployment-and-demo)
+[Product and workflow](#what-it-does) · [Architecture](#architecture) · [Security and identity](#identity-and-trust-boundaries) · [Review pipeline](#inside-the-check-pipeline) · [Data model](#data-and-api) · [Local setup](#run-locally) · [Testing](#verify-changes) · [Deployment](#deployment-and-demo)
 
-## What Vouch does
+## What it does
 
 | Area | Current experience |
 | --- | --- |
@@ -22,6 +40,20 @@ Brands and creators need to agree on what a campaign asks for, what evidence sup
 Campaigns also support reusable briefs, claim evidence, requirements, readiness summaries, creator feedback and revisions, version comparison, and approval reports. An approval belongs to a particular asset, caption, analysis and rule version; a revision does not inherit it.
 
 **Current limits:** campaign Check uses fixture providers, not live media analysis. A successful synthetic Meta API probe demonstrates connectivity, not model quality or production readiness. Try remains gated, Track contains test activity, and public deployment and Google onboarding still require end-to-end verification. The application supports review decisions; it does not certify legal compliance or publish content automatically.
+
+## Meta Model API integration
+
+Vouch separates model transport from the campaign decision. The product Check worker currently uses fixture adapters for reasoning, speech and visual evidence; the server also contains a catalog probe and a bounded Spark structured-output smoke adapter. A successful synthetic Spark request establishes that the configured transport worked for that request. It does not mean that a real campaign video was sent, understood or evaluated.
+
+| Model role | Intended contribution | Current product state |
+| --- | --- | --- |
+| Spark | Structured reasoning grounded in supplied evidence and rules | Fixture Check; separate synthetic transport probe succeeded |
+| Voice Transcribe | Time-aligned speech evidence | Fixture Check; live product execution unverified |
+| SAM | Sampled visual or product-concept evidence | Fixture Check; live product execution unverified |
+| Wonder | Bounded, evidence-linked campaign dossier | Planned role; the current readiness brief is deterministic |
+| Muse Image | Product preview in an eligible market | Restricted for India; not called for the India experience |
+
+Keys stay on the server. A human reviewer decides what to accept or approve; a model result does not publish content or certify compliance.
 
 ## How the workflow fits together
 
