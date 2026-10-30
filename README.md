@@ -74,6 +74,8 @@ For a configured hosted Supabase development environment, `npm.cmd run dev:hoste
 
 The local authenticated setup can provision test users such as `marketer@vouch.test` and `reviewer@vouch.test`; its generated password is stored locally in ignored `.local/credentials.json`. These are local test accounts, not hosted judge credentials. No public test password or verified hosted demo account is currently available.
 
+For the local fixture demo, select the **Acme Eyewear · Maya — marketer** identity, open **Vouch Track**, and choose a campaign with the synthetic creator on its roster. Use **Record a test event** to add clicks, an order and a partial refund. For example, an order for 249900 paise and a refund of 49900 paise show ₹2,499 gross, ₹499 refunded and ₹2,000 net in the **test** panel. These are synthetic events, not connected commerce data; the live panel remains separate.
+
 ## Verify changes
 
 ```powershell

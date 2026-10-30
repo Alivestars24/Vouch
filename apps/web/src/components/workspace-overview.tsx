@@ -107,30 +107,30 @@ export function WorkspaceOverview({
       </section>
 
       <section className="module-overview" aria-label="Vouch product modules">
-        <article className="module-card find-module">
-          <div className="module-card-top"><span>01</span><small>Planned</small></div>
+        <Link className="module-card find-module" href="/find">
+          <div className="module-card-top"><span>01</span><small>Curated creators</small></div>
           <h2>Vouch Find</h2>
-          <p>Discover creators who already use products like yours.</p>
+          <p>Explore curated creators using their available portfolio evidence.</p>
           <div className="module-visual creator-cluster" aria-hidden="true"><i /><i /><i /></div>
-        </article>
+        </Link>
         <Link className="module-card check-module" href="#campaigns">
-          <div className="module-card-top"><span>02</span><small>Available locally</small></div>
+          <div className="module-card-top"><span>02</span><small>Fixture analysis</small></div>
           <h2>Vouch Check</h2>
-          <p>Review authorized drafts with evidence before a human decision.</p>
+          <p>Review drafts and fixture findings before a human decision. Live media analysis is not yet enabled.</p>
           <div className="module-visual check-sheet" aria-hidden="true"><i /><i /><i /></div>
         </Link>
         <article className="module-card try-module">
-          <div className="module-card-top"><span>03</span><small>Eligibility-gated</small></div>
+          <div className="module-card-top"><span>03</span><small>Unavailable in India</small></div>
           <h2>Vouch Try</h2>
-          <p>Product preview stays unavailable until model and market access are verified.</p>
+          <p>Product preview is unavailable in India because the intended image model is restricted there.</p>
           <div className="module-visual split-preview" aria-hidden="true"><i /><i /></div>
         </article>
-        <article className="module-card track-module">
-          <div className="module-card-top"><span>04</span><small>Later slice</small></div>
+        <Link className="module-card track-module" href="/track">
+          <div className="module-card-top"><span>04</span><small>Test data</small></div>
           <h2>Vouch Track</h2>
-          <p>Outcome reporting will separate real orders from fixture activity.</p>
+          <p>Explore test outcomes. Real orders and revenue are not connected yet.</p>
           <svg className="module-chart" viewBox="0 0 180 56" aria-hidden="true"><path d="M2 49c22 0 28-12 43-12 17 0 22 7 39-2 20-11 26-25 46-18 19 6 27-14 48-15" /><path d="M2 55h176" /></svg>
-        </article>
+        </Link>
       </section>
     </>
   );
