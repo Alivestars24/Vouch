@@ -160,6 +160,49 @@ def test_complete_revision_and_exact_version_approval(
     )
     assert foreign_readiness.status_code == 404
 
+    claim = client.post(
+        f"/api/v1/products/{campaign['product']['id']}/claims",
+        headers=marketer_headers,
+        json={
+            "approved_wording": "Designed for everyday comfort",
+            "evidence_label": "Approved synthetic product dossier",
+            "evidence_uri": "fixture://product-claims/everyday-comfort",
+        },
+    )
+    assert claim.status_code == 201, claim.text
+    requirements = [
+        {
+            "kind": "disclosure",
+            "label": "Use a clear spoken sponsorship disclosure",
+        },
+        {
+            "kind": "cta",
+            "label": "Use the approved call to action",
+            "expected_text": "Shop now",
+        },
+        {
+            "kind": "approved_claim",
+            "label": "Use the evidence-backed product wording",
+            "claim_id": claim.json()["id"],
+        },
+    ]
+    for requirement_payload in requirements:
+        created_requirement = client.post(
+            f"/api/v1/campaigns/{campaign['id']}/requirements",
+            headers=marketer_headers,
+            json=requirement_payload,
+        )
+        assert created_requirement.status_code == 201, created_requirement.text
+    empty_brief = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/brief", headers=reviewer_headers
+    )
+    assert empty_brief.status_code == 200
+    assert empty_brief.headers["cache-control"] == "no-store"
+    assert {item["status"] for item in empty_brief.json()["assessments"]} == {"unknown"}
+    assert client.get(
+        f"/api/v1/campaigns/{campaign['id']}/brief", headers=beta_headers
+    ).status_code == 404
+
     submission = create_submission(client, marketer_headers, campaign)
     version_one = submission["versions"][0]
     unchecked_readiness = client.get(
@@ -180,6 +223,22 @@ def test_complete_revision_and_exact_version_approval(
     assert check["machine_assessment"] == "fixes_suggested"
     assert check["review_status"] == "unreviewed"
     assert check["findings"][0]["time_range"] == {"start_ms": 0, "end_ms": 4000}
+    checked_brief = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/brief", headers=reviewer_headers
+    ).json()
+    statuses_by_kind = {
+        requirement["kind"]: next(
+            assessment["status"]
+            for assessment in checked_brief["assessments"]
+            if assessment["requirement_id"] == requirement["id"]
+        )
+        for requirement in checked_brief["requirements"]
+    }
+    assert statuses_by_kind == {
+        "approved_claim": "missing",
+        "cta": "missing",
+        "disclosure": "missing",
+    }
     blocked_readiness = client.get(
         f"/api/v1/campaigns/{campaign['id']}/readiness", headers=reviewer_headers
     ).json()
@@ -215,6 +274,19 @@ def test_complete_revision_and_exact_version_approval(
         },
     )
     assert decision.status_code == 200
+    reviewed_brief = client.get(
+        f"/api/v1/campaigns/{campaign['id']}/brief", headers=reviewer_headers
+    ).json()
+    disclosure = next(
+        requirement
+        for requirement in reviewed_brief["requirements"]
+        if requirement["kind"] == "disclosure"
+    )
+    assert next(
+        assessment["status"]
+        for assessment in reviewed_brief["assessments"]
+        if assessment["requirement_id"] == disclosure["id"]
+    ) == "observed"
     approval = client.post(
         f"/api/v1/checks/{check_id}/review-decisions",
         headers=reviewer_headers,

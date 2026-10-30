@@ -828,6 +828,22 @@ future billing availability or product-video Check quality.
 | Focused Ruff, mypy, ESLint and TypeScript | Passed |
 | `npm run contracts:check` | Passed after OpenAPI/type regeneration |
 
+## Content specification and hosted schema: 2026-10-30
+
+The campaign workspace now supports tenant-owned approved product claims with evidence references
+and optional expiry, plus typed disclosure, product-visibility, CTA, exact-phrase and approved-claim
+requirements. Each current submission version receives an observed/missing/unknown assessment.
+Caption checks are exact matches; incomplete modalities stay unknown; fixture visual evidence never
+claims exact SKU identity.
+
+| Verification | Result |
+| --- | --- |
+| Focused lifecycle backend test | Passed for claim authoring, requirement authoring, empty/checked/reviewer-updated assessments and tenant denial |
+| Focused frontend test | 2 passed for fail-closed evidence display and marketer authoring |
+| Focused Ruff, mypy, ESLint and TypeScript | Passed |
+| Hosted migration dry-run/push | Only `20261029191124_campaign_content_spec.sql`; no seeds, roles or Vault changes; applied successfully |
+| Hosted database lint (`error`) | No issues found; local/remote migration history matches |
+
 ## Known limitations and dependencies
 
 - SQLite fixture and local Supabase Auth/Storage both execute the workflow. Hosted schema/runtime

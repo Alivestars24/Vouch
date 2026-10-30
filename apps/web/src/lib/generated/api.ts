@@ -56,6 +56,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/campaigns/{campaign_id}/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Campaign Brief Get */
+        get: operations["campaign_brief_get_api_v1_campaigns__campaign_id__brief_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/campaigns/{campaign_id}/creators": {
         parameters: {
             query?: never;
@@ -101,6 +118,23 @@ export interface paths {
         get: operations["campaign_readiness_get_api_v1_campaigns__campaign_id__readiness_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/campaigns/{campaign_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Campaign Requirement Create */
+        post: operations["campaign_requirement_create_api_v1_campaigns__campaign_id__requirements_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -636,6 +670,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/{product_id}/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Product Claims */
+        get: operations["product_claims_api_v1_products__product_id__claims_get"];
+        put?: never;
+        /** Product Claim Create */
+        post: operations["product_claim_create_api_v1_products__product_id__claims_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/rule-pack-versions": {
         parameters: {
             query?: never;
@@ -989,6 +1041,45 @@ export interface components {
             /** Submission Version No */
             submission_version_no: number;
         };
+        /** BriefRequirementAssessmentRead */
+        BriefRequirementAssessmentRead: {
+            /** Analysis Id */
+            analysis_id: string | null;
+            /** Detail */
+            detail: string;
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /**
+             * Requirement Id
+             * Format: uuid
+             */
+            requirement_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "unknown";
+            /** Submission Id */
+            submission_id: string | null;
+            /** Submission Version Id */
+            submission_version_id: string | null;
+        };
+        /** CampaignBriefRead */
+        CampaignBriefRead: {
+            /** Assessments */
+            assessments: components["schemas"]["BriefRequirementAssessmentRead"][];
+            /**
+             * Campaign Id
+             * Format: uuid
+             */
+            campaign_id: string;
+            /** Claims */
+            claims: components["schemas"]["ProductClaimRead"][];
+            /** Limitations */
+            limitations: string[];
+            /** Requirements */
+            requirements: components["schemas"]["CampaignRequirementRead"][];
+        };
         /** CampaignCreate */
         CampaignCreate: {
             /** Creator Ids */
@@ -1072,6 +1163,56 @@ export interface components {
             ready: boolean;
             /** Summary */
             summary: string;
+        };
+        /** CampaignRequirementCreate */
+        CampaignRequirementCreate: {
+            /** Claim Id */
+            claim_id?: string | null;
+            /** Expected Text */
+            expected_text?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "disclosure" | "product_visibility" | "cta" | "exact_phrase" | "approved_claim";
+            /** Label */
+            label: string;
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+        };
+        /** CampaignRequirementRead */
+        CampaignRequirementRead: {
+            /**
+             * Campaign Id
+             * Format: uuid
+             */
+            campaign_id: string;
+            /** Claim Id */
+            claim_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Expected Text */
+            expected_text: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "disclosure" | "product_visibility" | "cta" | "exact_phrase" | "approved_claim";
+            /** Label */
+            label: string;
+            /** Required */
+            required: boolean;
         };
         /** CampaignTrackRead */
         CampaignTrackRead: {
@@ -1713,6 +1854,48 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** ProductClaimCreate */
+        ProductClaimCreate: {
+            /** Approved Wording */
+            approved_wording: string;
+            /** Evidence Label */
+            evidence_label: string;
+            /** Evidence Uri */
+            evidence_uri: string;
+            /** Expires At */
+            expires_at?: string | null;
+        };
+        /** ProductClaimRead */
+        ProductClaimRead: {
+            /** Approved Wording */
+            approved_wording: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Evidence Label */
+            evidence_label: string;
+            /** Evidence Uri */
+            evidence_uri: string;
+            /** Expires At */
+            expires_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "approved" | "expired" | "withdrawn";
+        };
         /** ReadinessCitationRead */
         ReadinessCitationRead: {
             /** Href */
@@ -2068,6 +2251,41 @@ export interface operations {
             };
         };
     };
+    campaign_brief_get_api_v1_campaigns__campaign_id__brief_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+                "X-Fixture-User"?: string | null;
+                "X-Fixture-Roles"?: string | null;
+            };
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignBriefRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     campaign_creator_create_api_v1_campaigns__campaign_id__creators_post: {
         parameters: {
             query?: never;
@@ -2168,6 +2386,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CampaignReadinessRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    campaign_requirement_create_api_v1_campaigns__campaign_id__requirements_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+                "X-Fixture-User"?: string | null;
+                "X-Fixture-Roles"?: string | null;
+            };
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignRequirementCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRequirementRead"];
                 };
             };
             /** @description Validation Error */
@@ -3331,6 +3588,80 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    product_claims_api_v1_products__product_id__claims_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+                "X-Fixture-User"?: string | null;
+                "X-Fixture-Roles"?: string | null;
+            };
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductClaimRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    product_claim_create_api_v1_products__product_id__claims_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+                "X-Fixture-User"?: string | null;
+                "X-Fixture-Roles"?: string | null;
+            };
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductClaimCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductClaimRead"];
                 };
             };
             /** @description Validation Error */

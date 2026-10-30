@@ -5,7 +5,10 @@ import type {
   ApprovalRecord,
   ApprovalReport,
   Campaign,
+  CampaignBrief,
   CampaignReadiness,
+  CampaignRequirement,
+  CampaignRequirementKind,
   CampaignTrack,
   CatalogCreator,
   CatalogProduct,
@@ -27,6 +30,7 @@ import type {
   MediaProcessing,
   MediaProcessingMetadata,
   ProcessingNotice,
+  ProductClaim,
   Role,
   RulePackVersion,
   Submission,
@@ -806,6 +810,115 @@ export async function getCampaignReadiness(
     }),
     limitations: arrayAt(source, "limitations").map(String),
   };
+}
+
+function normalizeProductClaim(input: unknown): ProductClaim {
+  const source = record(input);
+  return {
+    id: stringAt(source, ["id"]),
+    productId: stringAt(source, ["product_id"]),
+    approvedWording: stringAt(source, ["approved_wording"]),
+    evidenceLabel: stringAt(source, ["evidence_label"]),
+    evidenceUri: stringAt(source, ["evidence_uri"]),
+    expiresAt: stringAt(source, ["expires_at"]) || undefined,
+    status: stringAt(source, ["status"]) as ProductClaim["status"],
+    createdAt: stringAt(source, ["created_at"]),
+  };
+}
+
+function normalizeCampaignRequirement(input: unknown): CampaignRequirement {
+  const source = record(input);
+  return {
+    id: stringAt(source, ["id"]),
+    campaignId: stringAt(source, ["campaign_id"]),
+    kind: stringAt(source, ["kind"]) as CampaignRequirement["kind"],
+    label: stringAt(source, ["label"]),
+    expectedText: stringAt(source, ["expected_text"]) || undefined,
+    claimId: stringAt(source, ["claim_id"]) || undefined,
+    required: booleanAt(source, ["required"]),
+    createdAt: stringAt(source, ["created_at"]),
+  };
+}
+
+export async function getCampaignBrief(
+  identity: FixtureIdentity,
+  campaignId: string,
+  signal?: AbortSignal,
+): Promise<CampaignBrief> {
+  const source = record(await requestJson(
+    identity,
+    `/campaigns/${encodeURIComponent(campaignId)}/brief`,
+    { signal },
+  ));
+  return {
+    campaignId: stringAt(source, ["campaign_id"]),
+    claims: arrayAt(source, "claims").map(normalizeProductClaim),
+    requirements: arrayAt(source, "requirements").map(normalizeCampaignRequirement),
+    assessments: arrayAt(source, "assessments").map((item) => {
+      const assessment = record(item);
+      return {
+        requirementId: stringAt(assessment, ["requirement_id"]),
+        submissionId: stringAt(assessment, ["submission_id"]) || undefined,
+        submissionVersionId: stringAt(assessment, ["submission_version_id"]) || undefined,
+        analysisId: stringAt(assessment, ["analysis_id"]) || undefined,
+        status: stringAt(assessment, ["status"]) as CampaignBrief["assessments"][number]["status"],
+        detail: stringAt(assessment, ["detail"]),
+        evidenceIds: arrayAt(assessment, "evidence_ids").map(String),
+      };
+    }),
+    limitations: arrayAt(source, "limitations").map(String),
+  };
+}
+
+export async function createProductClaim(
+  identity: FixtureIdentity,
+  productId: string,
+  input: {
+    approvedWording: string;
+    evidenceLabel: string;
+    evidenceUri: string;
+    expiresAt?: string;
+  },
+): Promise<ProductClaim> {
+  return normalizeProductClaim(await requestJson(
+    identity,
+    `/products/${encodeURIComponent(productId)}/claims`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        approved_wording: input.approvedWording,
+        evidence_label: input.evidenceLabel,
+        evidence_uri: input.evidenceUri,
+        expires_at: input.expiresAt,
+      }),
+    },
+  ));
+}
+
+export async function createCampaignRequirement(
+  identity: FixtureIdentity,
+  campaignId: string,
+  input: {
+    kind: CampaignRequirementKind;
+    label: string;
+    expectedText?: string;
+    claimId?: string;
+  },
+): Promise<CampaignRequirement> {
+  return normalizeCampaignRequirement(await requestJson(
+    identity,
+    `/campaigns/${encodeURIComponent(campaignId)}/requirements`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        kind: input.kind,
+        label: input.label,
+        expected_text: input.expectedText,
+        claim_id: input.claimId,
+        required: true,
+      }),
+    },
+  ));
 }
 
 function normalizeTrackSummary(input: unknown): TrackEnvironmentSummary {

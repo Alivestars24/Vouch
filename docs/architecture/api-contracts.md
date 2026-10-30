@@ -175,9 +175,12 @@ Use 400 invalid shape, 401 unauthenticated, 403 forbidden/policy-restricted, 404
 | `GET /me/workspaces` | Authenticated user | Active memberships only. |
 | `GET /capabilities` | Member and proposed eligibility context | Per-capability status/reason/policy version; configuration is not ready. |
 | `GET /products`, `GET /creators`, `GET /rule-pack-versions` | Scoped member; creator filters include product/category/match/permission/verification | Read catalog/tenant-owned curated evidence/applicable packs. Creator evidence exposes source kind/label, permission, verification, method and capture time. First slice uses explicitly synthetic seed intake; authoring and Shopify sync are deferred. |
+| `GET/POST /products/{id}/claims` | Read: scoped member. Create: admin/marketer | Tenant-scoped approved wording, evidence reference and optional expiry. Creation does not establish legal substantiation; expired evidence is not current. |
 | `POST /campaigns` | Admin/marketer; brand, name, market, product refs, pinned pack versions | 201 campaign; validate all parent ownership/applicability. |
 | `GET /campaigns`, `GET /campaigns/{id}` | Authorized member | Paginated data and current actions; no invented metrics. |
 | `GET /campaigns/{id}/readiness` | Authorized member | No-store, deterministic blocker/action/ready summary with tenant-scoped source citations. It does not invoke Wonder or mutate review state. |
+| `GET /campaigns/{id}/brief` | Authorized member | No-store claim library, explicit requirements and current-version observed/missing/unknown assessments with evidence IDs and limitations. |
+| `POST /campaigns/{id}/requirements` | Admin/marketer | Add a typed brief requirement. Approved-claim references must belong to the campaign product and remain current. |
 | `POST /campaigns/{id}/creators` | Admin/marketer; `creator_id` plus exact `evidence_id` | 201 new roster assignment or 200 identical replay/legacy evidence link. Evidence must belong to the creator and tenant, have recorded permission, be available, and match the campaign product or category. The persisted evidence link is write-once; a different later link returns conflict. |
 | `POST /uploads` | Authorized uploader; purpose, proposed type/size, campaign | Scoped signed upload URL/object ID, max bytes, expiration and finalization token. |
 | `POST /uploads/{id}/finalize` | Uploader; expected object ref | Queue validation; never trust browser hash/MIME as server-verified. |

@@ -126,6 +126,53 @@ export interface CampaignReadiness {
   limitations: string[];
 }
 
+export type CampaignRequirementKind =
+  | "disclosure"
+  | "product_visibility"
+  | "cta"
+  | "exact_phrase"
+  | "approved_claim";
+
+export interface ProductClaim {
+  id: string;
+  productId: string;
+  approvedWording: string;
+  evidenceLabel: string;
+  evidenceUri: string;
+  expiresAt?: string;
+  status: "approved" | "expired" | "withdrawn";
+  createdAt: string;
+}
+
+export interface CampaignRequirement {
+  id: string;
+  campaignId: string;
+  kind: CampaignRequirementKind;
+  label: string;
+  expectedText?: string;
+  claimId?: string;
+  required: boolean;
+  createdAt: string;
+}
+
+export interface BriefRequirementAssessment {
+  requirementId: string;
+  submissionId?: string;
+  submissionVersionId?: string;
+  analysisId?: string;
+  status: "observed" | "missing" | "unknown";
+  detail: string;
+  evidenceIds: string[];
+}
+
+export interface CampaignBrief {
+  campaignId: string;
+  claims: ProductClaim[];
+  requirements: CampaignRequirement[];
+  assessments: BriefRequirementAssessment[];
+  limitations: string[];
+}
+
 export interface CatalogProduct {
   id: string;
   name: string;

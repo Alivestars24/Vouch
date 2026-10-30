@@ -30,6 +30,7 @@ from .models import (
     BudgetReservation,
     Campaign,
     CampaignCreator,
+    CampaignRequirement,
     ConsentReceipt,
     Creator,
     CreatorEvidence,
@@ -48,6 +49,7 @@ from .models import (
     Organization,
     OutcomeEvent,
     Product,
+    ProductClaim,
     ReviewContext,
     ReviewEvent,
     RulePackVersion,
@@ -61,6 +63,7 @@ from .notices import NOTICE_REGISTRY, require_current_notice
 from .schemas import (
     CampaignCreate,
     CampaignCreatorCreate,
+    CampaignRequirementCreate,
     CheckCreate,
     CreatorFeedbackCreate,
     CreatorMatchKind,
@@ -69,6 +72,7 @@ from .schemas import (
     DeletionRequestCreate,
     FindingDecisionCreate,
     FixRequestCreate,
+    ProductClaimCreate,
     ReviewDecisionCreate,
     SubmissionCreate,
     SubmissionVersionCreate,
@@ -974,6 +978,305 @@ def campaign_readiness(
             "This brief is derived from authorized Vouch records and does not invoke Wonder.",
             "It cannot certify legal compliance, approve content, publish content, or "
             "contact creators.",
+        ],
+    }
+
+
+def _product_claim_dict(claim: ProductClaim) -> dict[str, Any]:
+    status = claim.status
+    if claim.expires_at is not None and _as_utc(claim.expires_at) <= utcnow():
+        status = "expired"
+    return {
+        "id": claim.id,
+        "product_id": claim.product_id,
+        "approved_wording": claim.approved_wording,
+        "evidence_label": claim.evidence_label,
+        "evidence_uri": claim.evidence_uri,
+        "expires_at": _as_utc(claim.expires_at) if claim.expires_at else None,
+        "status": status,
+        "created_at": _as_utc(claim.created_at),
+    }
+
+
+def list_product_claims(
+    session: Session, principal: Principal, product_id: UUID
+) -> list[dict[str, Any]]:
+    product = session.scalar(
+        select(Product).where(
+            Product.id == product_id,
+            Product.organization_id == principal.organization_id,
+        )
+    )
+    if product is None:
+        raise not_found()
+    claims = session.scalars(
+        select(ProductClaim)
+        .where(
+            ProductClaim.organization_id == principal.organization_id,
+            ProductClaim.product_id == product.id,
+        )
+        .order_by(ProductClaim.created_at.desc())
+    ).all()
+    return [_product_claim_dict(claim) for claim in claims]
+
+
+def create_product_claim(
+    session: Session,
+    principal: Principal,
+    product_id: UUID,
+    payload: ProductClaimCreate,
+) -> dict[str, Any]:
+    require_roles(principal, "admin", "marketer")
+    product = session.scalar(
+        select(Product).where(
+            Product.id == product_id,
+            Product.organization_id == principal.organization_id,
+        )
+    )
+    if product is None:
+        raise not_found()
+    if payload.expires_at is not None and payload.expires_at <= utcnow():
+        raise unprocessable(
+            "INVALID_CLAIM_EXPIRY", "Claim evidence expiry must be in the future."
+        )
+    claim = ProductClaim(
+        organization_id=principal.organization_id,
+        product_id=product.id,
+        approved_wording=payload.approved_wording.strip(),
+        evidence_label=payload.evidence_label.strip(),
+        evidence_uri=payload.evidence_uri.strip(),
+        expires_at=payload.expires_at,
+        status="approved",
+        created_by=principal.user_id,
+    )
+    session.add(claim)
+    session.flush()
+    audit(
+        session,
+        principal,
+        "product_claim.created",
+        "product_claim",
+        claim.id,
+        {"product_id": str(product.id), "has_expiry": claim.expires_at is not None},
+    )
+    session.commit()
+    return _product_claim_dict(claim)
+
+
+def _campaign_requirement_dict(requirement: CampaignRequirement) -> dict[str, Any]:
+    return {
+        "id": requirement.id,
+        "campaign_id": requirement.campaign_id,
+        "kind": requirement.kind,
+        "label": requirement.label,
+        "expected_text": requirement.expected_text,
+        "claim_id": requirement.claim_id,
+        "required": requirement.required,
+        "created_at": _as_utc(requirement.created_at),
+    }
+
+
+def create_campaign_requirement(
+    session: Session,
+    principal: Principal,
+    campaign_id: UUID,
+    payload: CampaignRequirementCreate,
+) -> dict[str, Any]:
+    require_roles(principal, "admin", "marketer")
+    campaign = get_campaign(session, principal, campaign_id)
+    if payload.claim_id is not None:
+        claim = session.scalar(
+            select(ProductClaim).where(
+                ProductClaim.id == payload.claim_id,
+                ProductClaim.organization_id == principal.organization_id,
+                ProductClaim.product_id == campaign.product_id,
+            )
+        )
+        if claim is None:
+            raise unprocessable(
+                "CLAIM_UNAVAILABLE",
+                "Approved claim is unavailable for this campaign product.",
+            )
+        if _product_claim_dict(claim)["status"] != "approved":
+            raise unprocessable(
+                "CLAIM_NOT_CURRENT", "Approved claim evidence is no longer current."
+            )
+    requirement = CampaignRequirement(
+        organization_id=principal.organization_id,
+        campaign_id=campaign.id,
+        kind=payload.kind,
+        label=payload.label.strip(),
+        expected_text=(payload.expected_text.strip() if payload.expected_text else None),
+        claim_id=payload.claim_id,
+        required=payload.required,
+        created_by=principal.user_id,
+    )
+    session.add(requirement)
+    session.flush()
+    audit(
+        session,
+        principal,
+        "campaign_requirement.created",
+        "campaign_requirement",
+        requirement.id,
+        {"campaign_id": str(campaign.id), "kind": requirement.kind},
+    )
+    session.commit()
+    return _campaign_requirement_dict(requirement)
+
+
+def _requirement_assessment(
+    session: Session,
+    requirement: CampaignRequirement,
+    submission: Submission,
+    version: SubmissionVersion,
+) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "requirement_id": requirement.id,
+        "submission_id": submission.id,
+        "submission_version_id": version.id,
+        "analysis_id": None,
+        "status": "unknown",
+        "detail": "This requirement has not been evaluated for the current version.",
+        "evidence_ids": [],
+    }
+    if requirement.kind in {"cta", "exact_phrase", "approved_claim"}:
+        expected = requirement.expected_text
+        if requirement.kind == "approved_claim" and requirement.claim_id is not None:
+            claim = session.get(ProductClaim, requirement.claim_id)
+            if claim is None or _product_claim_dict(claim)["status"] != "approved":
+                base["detail"] = "The linked claim evidence is unavailable or expired."
+                return base
+            expected = claim.approved_wording
+        if expected is None:
+            base["detail"] = "No expected wording is configured."
+            return base
+        if expected.casefold() in version.caption.casefold():
+            base["status"] = "observed"
+            base["detail"] = "The configured wording appears in the exact caption snapshot."
+        else:
+            base["status"] = "missing"
+            base["detail"] = "The configured wording was not found in the caption snapshot."
+        return base
+
+    analysis = session.scalar(
+        select(Analysis)
+        .where(
+            Analysis.organization_id == requirement.organization_id,
+            Analysis.submission_version_id == version.id,
+        )
+        .order_by(Analysis.created_at.desc())
+        .limit(1)
+    )
+    if analysis is None:
+        base["detail"] = "Run Check for this exact version before evaluating this requirement."
+        return base
+    base["analysis_id"] = analysis.id
+    modality = "speech" if requirement.kind == "disclosure" else "visual"
+    evidence = session.scalars(
+        select(EvidenceItem).where(
+            EvidenceItem.organization_id == requirement.organization_id,
+            EvidenceItem.analysis_id == analysis.id,
+            EvidenceItem.modality == modality,
+        )
+    ).all()
+    base["evidence_ids"] = [item.id for item in evidence]
+    if analysis.analysis_status != "completed" or modality not in analysis.observed_coverage:
+        base["detail"] = f"{modality.title()} evidence is incomplete, so the result is unknown."
+        return base
+    rule_id = "DISCLOSURE_AUDIO" if requirement.kind == "disclosure" else "PRODUCT_VISIBILITY"
+    finding = session.scalar(
+        select(Finding).where(
+            Finding.organization_id == requirement.organization_id,
+            Finding.analysis_id == analysis.id,
+            Finding.rule_id == rule_id,
+        )
+    )
+    if finding is not None:
+        decision = latest_decision(session, finding.id)
+        if decision is None or decision.decision not in {"dismissed", "incorrect"}:
+            base["status"] = "missing"
+            base["detail"] = (
+                "Check found evidence that this requirement still needs review or a fix."
+            )
+            return base
+    base["status"] = "observed"
+    base["detail"] = (
+        "Check observed the required modality; exact product identity still requires human review."
+        if requirement.kind == "product_visibility"
+        else "Check found complete speech coverage with no unresolved disclosure finding."
+    )
+    return base
+
+
+def campaign_brief(
+    session: Session, principal: Principal, campaign_id: UUID
+) -> dict[str, Any]:
+    campaign = get_campaign(session, principal, campaign_id)
+    claims = session.scalars(
+        select(ProductClaim)
+        .where(
+            ProductClaim.organization_id == principal.organization_id,
+            ProductClaim.product_id == campaign.product_id,
+        )
+        .order_by(ProductClaim.created_at.desc())
+    ).all()
+    requirements = session.scalars(
+        select(CampaignRequirement)
+        .where(
+            CampaignRequirement.organization_id == principal.organization_id,
+            CampaignRequirement.campaign_id == campaign.id,
+        )
+        .order_by(CampaignRequirement.created_at)
+    ).all()
+    submissions = session.scalars(
+        select(Submission).where(
+            Submission.organization_id == principal.organization_id,
+            Submission.campaign_id == campaign.id,
+            Submission.deleted_at.is_(None),
+        )
+    ).all()
+    assessments: list[dict[str, Any]] = []
+    for requirement in requirements:
+        if not submissions:
+            assessments.append(
+                {
+                    "requirement_id": requirement.id,
+                    "submission_id": None,
+                    "submission_version_id": None,
+                    "analysis_id": None,
+                    "status": "unknown",
+                    "detail": "No current creator draft is available.",
+                    "evidence_ids": [],
+                }
+            )
+            continue
+        for submission in submissions:
+            version = session.get(SubmissionVersion, submission.current_version_id)
+            if version is None:
+                assessments.append(
+                    {
+                        "requirement_id": requirement.id,
+                        "submission_id": submission.id,
+                        "submission_version_id": None,
+                        "analysis_id": None,
+                        "status": "unknown",
+                        "detail": "The submission has no current version.",
+                        "evidence_ids": [],
+                    }
+                )
+                continue
+            assessments.append(_requirement_assessment(session, requirement, submission, version))
+    return {
+        "campaign_id": campaign.id,
+        "claims": [_product_claim_dict(claim) for claim in claims],
+        "requirements": [_campaign_requirement_dict(item) for item in requirements],
+        "assessments": assessments,
+        "limitations": [
+            "Caption wording checks are exact text matches, not semantic claim certification.",
+            "Fixture visual and speech observations do not prove product identity or legal "
+            "compliance.",
+            "Missing or incomplete evidence is reported as unknown, never as a pass.",
         ],
     }
 

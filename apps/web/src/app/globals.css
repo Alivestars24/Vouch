@@ -49,6 +49,40 @@ img, svg, canvas { max-width: 100%; }
 }
 
 /* Find · curated creator evidence */
+/* Content specification: claim evidence and brief coverage */
+.campaign-brief {
+  display: grid;
+  gap: var(--space-md);
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.campaign-brief .section-heading { margin: 0; }
+.campaign-brief .section-heading p:last-child { max-width: 68ch; margin: .25rem 0 0; color: var(--color-muted); }
+.brief-requirements { display: grid; gap: var(--space-xs); padding: 0; margin: 0; list-style: none; }
+.brief-requirements > li { display: grid; gap: var(--space-xs); padding: var(--space-sm); border: 1px solid var(--color-rule); border-radius: var(--radius-input); background: var(--color-paper); }
+.brief-requirement-heading h3 { margin: .2rem 0 0; font-size: var(--text-md); }
+.brief-assessment { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: var(--space-xs); padding-top: var(--space-xs); border-top: 1px solid var(--color-rule); }
+.brief-assessment p { margin: .15rem 0 0; color: var(--color-muted); font-size: var(--text-sm); }
+.brief-assessment small { grid-column: 2; color: var(--color-muted); }
+.claim-library { display: grid; gap: var(--space-xs); }
+.claim-library h3 { margin: 0; font-size: var(--text-md); }
+.claim-library article { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); border: 1px solid var(--color-rule); border-radius: var(--radius-input); }
+.claim-library article span:last-child { grid-column: 2; color: var(--color-muted); font-size: var(--text-xs); }
+.brief-authoring { display: grid; gap: var(--space-xs); }
+.brief-authoring details { border: 1px solid var(--color-rule); border-radius: var(--radius-input); background: var(--color-paper); }
+.brief-authoring summary { min-height: 44px; display: flex; align-items: center; padding: 0 var(--space-sm); cursor: pointer; font-weight: 700; }
+.brief-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); padding: 0 var(--space-sm) var(--space-sm); }
+.brief-form .full { grid-column: 1 / -1; }
+.brief-form .button { align-self: end; justify-self: start; }
+
+@media (max-width: 39.99rem) {
+  .brief-form { grid-template-columns: minmax(0, 1fr); }
+  .brief-form .full { grid-column: auto; }
+  .brief-form .button { width: 100%; }
+}
+
 .find-workspace { min-width: 0; }
 .find-page-header {
   display: grid;

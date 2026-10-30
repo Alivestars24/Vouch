@@ -216,6 +216,72 @@ class Campaign(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class ProductClaim(Base):
+    __tablename__ = "product_claims"
+    __table_args__ = (
+        CheckConstraint("status IN ('approved', 'withdrawn')"),
+        ForeignKeyConstraint(
+            ["organization_id", "product_id"],
+            ["products.organization_id", "products.id"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("organization_id", "id"),
+        Index("ix_product_claims_product", "organization_id", "product_id", "created_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    approved_wording: Mapped[str] = mapped_column(Text)
+    evidence_label: Mapped[str] = mapped_column(String(160))
+    evidence_uri: Mapped[str] = mapped_column(String(500))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="approved")
+    created_by: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class CampaignRequirement(Base):
+    __tablename__ = "campaign_requirements"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('disclosure', 'product_visibility', 'cta', 'exact_phrase', "
+            "'approved_claim')"
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "campaign_id"],
+            ["campaigns.organization_id", "campaigns.id"],
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "claim_id"],
+            ["product_claims.organization_id", "product_claims.id"],
+        ),
+        UniqueConstraint("organization_id", "id"),
+        Index(
+            "ix_campaign_requirements_campaign",
+            "organization_id",
+            "campaign_id",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    campaign_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    label: Mapped[str] = mapped_column(String(160))
+    expected_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
+    required: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class CampaignCreator(Base):
     __tablename__ = "campaign_creators"
     __table_args__ = (

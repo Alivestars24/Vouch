@@ -66,6 +66,76 @@ class CampaignCreate(ApiModel):
     creator_ids: list[UUID] = Field(default_factory=list, max_length=20)
 
 
+class ProductClaimCreate(ApiModel):
+    approved_wording: str = Field(min_length=1, max_length=2000)
+    evidence_label: str = Field(min_length=1, max_length=160)
+    evidence_uri: str = Field(min_length=1, max_length=500)
+    expires_at: AwareDatetime | None = None
+
+
+class ProductClaimRead(ApiModel):
+    id: UUID
+    product_id: UUID
+    approved_wording: str
+    evidence_label: str
+    evidence_uri: str
+    expires_at: AwareDatetime | None
+    status: Literal["approved", "expired", "withdrawn"]
+    created_at: AwareDatetime
+
+
+RequirementKind = Literal[
+    "disclosure", "product_visibility", "cta", "exact_phrase", "approved_claim"
+]
+
+
+class CampaignRequirementCreate(ApiModel):
+    kind: RequirementKind
+    label: str = Field(min_length=1, max_length=160)
+    expected_text: str | None = Field(default=None, min_length=1, max_length=2000)
+    claim_id: UUID | None = None
+    required: bool = True
+
+    @model_validator(mode="after")
+    def reference_matches_kind(self) -> CampaignRequirementCreate:
+        if self.kind == "approved_claim" and self.claim_id is None:
+            raise ValueError("approved claim requirements need claim_id")
+        if self.kind != "approved_claim" and self.claim_id is not None:
+            raise ValueError("claim_id is only valid for approved claim requirements")
+        if self.kind in {"cta", "exact_phrase"} and self.expected_text is None:
+            raise ValueError("text requirements need expected_text")
+        return self
+
+
+class CampaignRequirementRead(ApiModel):
+    id: UUID
+    campaign_id: UUID
+    kind: RequirementKind
+    label: str
+    expected_text: str | None
+    claim_id: UUID | None
+    required: bool
+    created_at: AwareDatetime
+
+
+class BriefRequirementAssessmentRead(ApiModel):
+    requirement_id: UUID
+    submission_id: UUID | None
+    submission_version_id: UUID | None
+    analysis_id: UUID | None
+    status: Literal["observed", "missing", "unknown"]
+    detail: str
+    evidence_ids: list[UUID]
+
+
+class CampaignBriefRead(ApiModel):
+    campaign_id: UUID
+    claims: list[ProductClaimRead]
+    requirements: list[CampaignRequirementRead]
+    assessments: list[BriefRequirementAssessmentRead]
+    limitations: list[str]
+
+
 class TestOutcomeEventCreate(ApiModel):
     creator_id: UUID
     event_kind: Literal["click", "order", "refund"]

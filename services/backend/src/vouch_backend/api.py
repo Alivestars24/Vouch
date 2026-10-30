@@ -53,10 +53,13 @@ from .models import Job, MediaAsset
 from .notices import ProcessingNotice, get_guest_notice, get_notice
 from .schemas import (
     ApprovalReportRead,
+    CampaignBriefRead,
     CampaignCreate,
     CampaignCreatorCreate,
     CampaignCreatorRead,
     CampaignReadinessRead,
+    CampaignRequirementCreate,
+    CampaignRequirementRead,
     CampaignTrackRead,
     CheckCreate,
     ConsentReceiptRead,
@@ -82,6 +85,8 @@ from .schemas import (
     GuestUploadIntentCreate,
     GuestUploadIntentRead,
     OutcomeEventRead,
+    ProductClaimCreate,
+    ProductClaimRead,
     ReviewDecisionCreate,
     StorageUsageResponse,
     SubmissionCreate,
@@ -94,6 +99,7 @@ from .seed import seed_fixture_data
 from .service import (
     add_campaign_creator,
     approval_report,
+    campaign_brief,
     campaign_dict,
     campaign_readiness,
     campaign_track_report,
@@ -105,9 +111,11 @@ from .service import (
     comparison,
     consent_receipt_dict,
     create_campaign,
+    create_campaign_requirement,
     create_check,
     create_deletion_request,
     create_fix_request,
+    create_product_claim,
     create_submission,
     create_submission_version,
     finalize_upload,
@@ -121,6 +129,7 @@ from .service import (
     list_campaign_submissions,
     list_campaigns,
     list_deletion_requests,
+    list_product_claims,
     publish_creator_feedback,
     read_media,
     record_finding_decision,
@@ -304,6 +313,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def products(session: SessionDep, principal: PrincipalDep) -> dict[str, Any]:
         return catalog_products(session, principal)
 
+    @app.get(
+        "/api/v1/products/{product_id}/claims",
+        response_model=list[ProductClaimRead],
+    )
+    def product_claims(
+        product_id: UUID, session: SessionDep, principal: PrincipalDep
+    ) -> list[dict[str, Any]]:
+        return list_product_claims(session, principal, product_id)
+
+    @app.post(
+        "/api/v1/products/{product_id}/claims",
+        response_model=ProductClaimRead,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def product_claim_create(
+        product_id: UUID,
+        payload: ProductClaimCreate,
+        session: SessionDep,
+        principal: PrincipalDep,
+    ) -> dict[str, Any]:
+        return create_product_claim(session, principal, product_id, payload)
+
     @app.get("/api/v1/creators", response_model=CreatorCatalogResponse)
     def creators(
         session: SessionDep,
@@ -360,6 +391,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return CampaignReadinessRead.model_validate(
             campaign_readiness(session, principal, campaign_id)
         )
+
+    @app.get(
+        "/api/v1/campaigns/{campaign_id}/brief",
+        response_model=CampaignBriefRead,
+    )
+    def campaign_brief_get(
+        campaign_id: UUID,
+        response: Response,
+        session: SessionDep,
+        principal: PrincipalDep,
+    ) -> CampaignBriefRead:
+        response.headers["Cache-Control"] = "no-store"
+        return CampaignBriefRead.model_validate(campaign_brief(session, principal, campaign_id))
+
+    @app.post(
+        "/api/v1/campaigns/{campaign_id}/requirements",
+        response_model=CampaignRequirementRead,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def campaign_requirement_create(
+        campaign_id: UUID,
+        payload: CampaignRequirementCreate,
+        session: SessionDep,
+        principal: PrincipalDep,
+    ) -> dict[str, Any]:
+        return create_campaign_requirement(session, principal, campaign_id, payload)
 
     @app.get(
         "/api/v1/campaigns/{campaign_id}/track",

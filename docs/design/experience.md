@@ -148,6 +148,12 @@ campaign records. Separate blocking issues from next actions, link each item to 
 region and state that the summary is record-derived. Loading or failure must not render a false
 ready state. Wonder may later add a bounded cited dossier, but is not required for this core brief.
 
+The content specification panel lists approved product wording beside its evidence label and expiry
+state, then shows each campaign requirement as **Observed**, **Missing** or **Unknown** for the
+current version. Exact caption matches must say they are exact matches. Visual fixture evidence may
+support human review but must not claim exact SKU identity. Only admins and marketers author these
+inputs; all members may inspect their provenance and limitations.
+
 Proposed desktop layout: video/player and transcript on one side; findings/rule detail on the other; a narrow timeline beneath the player. On mobile, stack player, summaries, finding list and detail with clear return/focus behavior. Keep destructive or approval actions out of accidental playback tap areas.
 
 Each finding shows:

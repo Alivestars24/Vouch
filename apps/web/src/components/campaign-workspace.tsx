@@ -10,6 +10,7 @@ import { MediaAssetMetadata } from "@/components/media-processing";
 import { ProcessingAuthorization } from "@/components/processing-authorization";
 import { CreatorInvitation } from "@/components/creator-invitation";
 import { CampaignReadinessPanel } from "@/components/campaign-readiness";
+import { CampaignBriefPanel } from "@/components/campaign-brief";
 import { InlineNotice, StatePanel, StatusBadge, StatusTriptych } from "@/components/status";
 import { useIdentity } from "@/components/identity-context";
 import {
@@ -455,6 +456,16 @@ export function CampaignWorkspace({ campaignId }: { campaignId: string }) {
         identity={identity}
         refreshKey={`${submissions.map((item) => `${item.id}:${item.currentVersionId}`).join("|")}:${check?.id ?? ""}:${check?.reviewVersion ?? ""}:${deletion?.status ?? ""}`}
       />
+
+      {campaign.productId ? (
+        <CampaignBriefPanel
+          campaignId={campaign.id}
+          productId={campaign.productId}
+          identity={identity}
+          canManage={canUpload}
+          refreshKey={`${submissions.map((item) => item.currentVersionId).join("|")}:${check?.id ?? ""}:${check?.reviewVersion ?? ""}`}
+        />
+      ) : null}
 
       <section className="workflow-strip" aria-label="Review workflow">
         {[
