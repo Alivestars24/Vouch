@@ -62,6 +62,7 @@ You need Node.js 24 or later, Python 3.14, and [uv](https://docs.astral.sh/uv/).
 
 ```powershell
 npm.cmd run setup
+$env:NEXT_PUBLIC_API_BASE_URL = 'http://127.0.0.1:8010/api/v1'
 npm.cmd run dev
 ```
 
