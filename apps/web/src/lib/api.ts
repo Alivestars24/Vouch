@@ -208,6 +208,9 @@ function apiUrl(pathOrUrl: string): string {
     return pathOrUrl;
   }
   const normalizedPath = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
+  if (API_BASE_URL.startsWith("/")) {
+    return `${API_BASE_URL}${normalizedPath}`;
+  }
   const base = new URL(API_BASE_URL);
   if (normalizedPath === base.pathname || normalizedPath.startsWith(`${base.pathname}/`)) {
     return `${base.origin}${normalizedPath}`;

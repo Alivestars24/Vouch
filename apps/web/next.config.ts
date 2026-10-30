@@ -54,7 +54,7 @@ const nextConfig: NextConfig = {
     ];
   },
   turbopack: {
-    root: path.resolve(import.meta.dirname, "../.."),
+    root: process.env.VERCEL ? import.meta.dirname : path.resolve(import.meta.dirname, "../.."),
   },
 };
 

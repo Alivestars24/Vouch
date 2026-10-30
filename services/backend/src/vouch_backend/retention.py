@@ -111,7 +111,8 @@ def main() -> None:
         settings.database_url, settings.database_schema,
         runtime_role="vouch_retention" if settings.auth_mode == "supabase" else None,
     )
-    database.create_all()
+    if settings.environment != "production":
+        database.create_all()
     store = SupabaseMediaStore(settings) if settings.auth_mode == "supabase" else None
     worker_id = f"retention-{socket.gethostname()}-{id(database)}"
     LOGGER.info("Vouch local retention process started")

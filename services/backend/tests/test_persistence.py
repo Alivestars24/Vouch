@@ -81,8 +81,32 @@ def test_composite_foreign_keys_reject_cross_tenant_parent(
 
 
 def test_fixture_identity_fails_closed_in_deployed_environments() -> None:
-    with pytest.raises(ValueError, match="Fixture identity"):
+    with pytest.raises(ValueError, match="fixture identity"):
         Settings(database_url="sqlite:///:memory:", environment="production")
+
+
+def test_production_requires_https_supabase_runtime() -> None:
+    with pytest.raises(ValueError, match="Production CORS origins"):
+        Settings(
+            auth_mode="supabase",
+            environment="production",
+            database_url="postgresql://api:secret@db.example.test/postgres",
+            supabase_url="https://project.supabase.co",
+            supabase_publishable_key="publishable-test-key",
+            cors_origins=("https://app.example.test", "http://preview.example.test"),
+            guest_public_origin="https://app.example.test",
+        )
+
+    settings = Settings(
+        auth_mode="supabase",
+        environment="production",
+        database_url="postgresql://api:secret@db.example.test/postgres",
+        supabase_url="https://project.supabase.co",
+        supabase_publishable_key="publishable-test-key",
+        cors_origins=("https://app.example.test",),
+        guest_public_origin="https://app.example.test",
+    )
+    assert settings.environment == "production"
 
 
 def test_postgres_migration_matches_runtime_columns(client: TestClient) -> None:

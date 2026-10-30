@@ -44,10 +44,11 @@ class Settings:
             raise ValueError("VOUCH_MEDIA_IMAGE must identify a local sandbox image.")
         if self.auth_mode not in {"fixture", "supabase"}:
             raise ValueError("VOUCH_AUTH_MODE must be fixture or supabase.")
-        if self.environment not in {"development", "test"}:
+        if self.environment not in {"development", "test", "production"}:
+            raise ValueError("VOUCH_ENVIRONMENT must be development, test or production.")
+        if self.environment == "production" and self.auth_mode != "supabase":
             raise ValueError(
-                "Fixture identity is limited to development/test. "
-                "Deployment remains disabled until all authenticated foundation gates pass."
+                "Production requires Supabase authentication; fixture identity cannot be deployed."
             )
         guest_origin = urlsplit(self.guest_public_origin)
         if (
@@ -71,6 +72,10 @@ class Settings:
             )
         if self.guest_public_origin not in self.cors_origins:
             raise ValueError("VOUCH_GUEST_PUBLIC_ORIGIN must be in VOUCH_CORS_ORIGINS.")
+        if self.environment == "production" and any(
+            urlsplit(origin).scheme != "https" for origin in self.cors_origins
+        ):
+            raise ValueError("Production CORS origins must use HTTPS.")
         if len(self.guest_rate_limit_key.encode("utf-8")) < 32:
             raise ValueError("VOUCH_GUEST_RATE_LIMIT_KEY must contain at least 32 bytes.")
         if self.meta_api_key is not None and (

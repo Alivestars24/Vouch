@@ -171,9 +171,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-        database.create_all()
-        if guest_database is not None:
-            guest_database.create_all()
+        if app_settings.environment != "production":
+            database.create_all()
+            if guest_database is not None:
+                guest_database.create_all()
         if app_settings.auth_mode == "fixture":
             with database.session_factory() as session:
                 seed_fixture_data(session)

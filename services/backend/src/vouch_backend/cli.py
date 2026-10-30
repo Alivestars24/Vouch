@@ -8,8 +8,8 @@ import uvicorn
 def api() -> None:
     uvicorn.run(
         "vouch_backend.api:app",
-        host="127.0.0.1",
-        port=int(os.getenv("VOUCH_API_PORT", "8010")),
+        host=os.getenv("VOUCH_API_HOST", "127.0.0.1"),
+        port=int(os.getenv("PORT", os.getenv("VOUCH_API_PORT", "8010"))),
         reload=False,
         access_log=True,
     )

@@ -695,7 +695,8 @@ def main() -> None:
         settings.database_schema,
         runtime_role="vouch_worker" if settings.auth_mode == "supabase" else None,
     )
-    database.create_all()
+    if settings.environment != "production":
+        database.create_all()
     if settings.auth_mode == "fixture":
         with database.session_factory() as session:
             seed_fixture_data(session)
